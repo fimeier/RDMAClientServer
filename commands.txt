@@ -1,0 +1,5 @@
+export LD_LIBRARY_PATH=/usr/local/lib
+java com.ibm.disni.examples.ReadClient -a localhost
+java -Djava.library.path=/usr/local/lib com.ibm.disni.examples.ReadServer -a localhost
+
+

@@ -1,8 +1,6 @@
 package eth.fimeier.assignment8;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URL;
+import eth.fimeier.assignment8.proxy.Proxy;
 
 public class Proxy_start {
 

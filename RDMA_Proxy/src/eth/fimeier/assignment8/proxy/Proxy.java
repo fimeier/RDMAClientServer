@@ -1,4 +1,4 @@
-package eth.fimeier.assignment8;
+package eth.fimeier.assignment8.proxy;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
 
+import com.ibm.disni.examples.ReadClient;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -17,6 +18,9 @@ public class Proxy {
 	private String PROXYSITE = "null";
 
 	private HttpServer server;
+	
+	private String rdmaServerIp = "192.168.170.30";
+    //private int rdmaServerPort = 1919;
 
 	//Todo Threads... damit Parallele Anfragen auch im Proxy
 	
@@ -33,6 +37,9 @@ public class Proxy {
 
 	class MyHandler implements HttpHandler {
 		public void handle(HttpExchange t) throws IOException {
+			System.out.println("callRdmaProxyEndpoint()....");
+			String result = callRdmaProxyEndpoint();
+			System.out.println("result was=" +result);
 			System.out.println("\nuser_input : "+t.getRequestURI().getQuery() +
 					" t.getRequestURI()="+ t.getLocalAddress() + " " +
 					t.getRemoteAddress() + " " +
@@ -103,6 +110,21 @@ public class Proxy {
 
 	private String backend(String user_input) {
 		return "Blubs";
+	}
+	
+	private String callRdmaProxyEndpoint() {
+		String result = "null";
+		String[] args = {"-a", "192.168.170.30"};
+		RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
+		try {
+			simpleClient.launch(args);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		return result;
 	}
 
 }
