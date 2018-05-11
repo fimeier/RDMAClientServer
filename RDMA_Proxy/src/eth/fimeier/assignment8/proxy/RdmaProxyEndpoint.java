@@ -26,6 +26,9 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 	private RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint> endpointGroup;
 	private String ipAddress;
 	private int port;
+	
+	private static int BUFFERSIZE_HTML = 300;//208;
+	private static int BUFFERSIZE_PNG = 2*2437;
 
 	public RdmaProxyEndpoint.CustomClientEndpoint createEndpoint(RdmaCmId idPriv, boolean serverSide) throws IOException {
 		return new RdmaProxyEndpoint.CustomClientEndpoint(endpointGroup, idPriv, serverSide);
@@ -70,7 +73,17 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 		//post the operation on the endpoint
 		SVCPostSend postSend = endpoint.postSend(endpoint.getWrList_send());
-		for (int i = 10; i <= 100; ){
+		
+		postSend.getWrMod(0).getSgeMod(0).setLength(length);
+		postSend.execute();
+		//wait until the operation has completed
+		endpoint.getWcEvents().take();
+		//we should have the content of the remote buffer in our own local buffer now
+		ByteBuffer dataBuf = endpoint.getDataBuf();
+		dataBuf.clear();
+		System.out.println("RdmaProxyEndpoint::read memory from server: " + dataBuf.asCharBuffer().toString());
+		
+		/*for (int i = 10; i <= 100; ){
 			postSend.getWrMod(0).getSgeMod(0).setLength(i);
 			postSend.execute();
 			//wait until the operation has completed
@@ -81,9 +94,12 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			dataBuf.clear();
 			System.out.println("RdmaProxyEndpoint::read memory from server: " + dataBuf.asCharBuffer().toString());
 			i += 10;
-		}
+		}*/
 
+		//dataBuf == dataMr enthält nun die Daten
 		//let's prepare a final message to signal everything went fine
+		//versuche Daten zu löschen....
+		//dataBuf.asCharBuffer().put("a final message to signal everything went fine jojo");
 		sendWR.setWr_id(1002);
 		sendWR.setOpcode(IbvSendWR.IBV_WR_SEND);
 		sendWR.setSend_flags(IbvSendWR.IBV_SEND_SIGNALED);
@@ -119,7 +135,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		private ByteBuffer buffers[];
 		private IbvMr mrlist[];
 		private int buffercount = 3;
-		private int buffersize = 100;
+		private int buffersize = BUFFERSIZE_HTML; //100;
 
 		private ByteBuffer dataBuf;
 		private IbvMr dataMr;
@@ -142,7 +158,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		public CustomClientEndpoint(RdmaActiveEndpointGroup<? extends CustomClientEndpoint> endpointGroup, RdmaCmId idPriv, boolean isServerSide) throws IOException {
 			super(endpointGroup, idPriv, isServerSide);
 			this.buffercount = 3;
-			this.buffersize = 100;
+			this.buffersize = BUFFERSIZE_HTML; //100;
 			buffers = new ByteBuffer[buffercount];
 			this.mrlist = new IbvMr[buffercount];
 
@@ -181,7 +197,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			dataBuf.clear();
 			sendBuf.clear();
 
-			sgeSend.setAddr(dataMr.getAddr());
+			sgeSend.setAddr(dataMr.getAddr()); //mefi.... sendet die Daten zurück die empfangen wurden!!!
 			sgeSend.setLength(dataMr.getLength());
 			sgeSend.setLkey(dataMr.getLkey());
 			sgeList.add(sgeSend);
