@@ -1,9 +1,12 @@
 package eth.fimeier.assignment8.proxy;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -29,6 +32,20 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 	
 	private static int BUFFERSIZE_HTML = 300;//208;
 	private static int BUFFERSIZE_PNG = 2*2437;
+	
+	static String absolutePath = new File("").getAbsolutePath() ;
+	static String pathStaticPages = absolutePath + "/src/eth/fimeier/assignment8/proxy/temp/";
+
+	public void write_png(byte[] png) {
+		String path = pathStaticPages+ "network.png";
+		try {
+			Files.write(Paths.get(path), png);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 
 	public RdmaProxyEndpoint.CustomClientEndpoint createEndpoint(RdmaCmId idPriv, boolean serverSide) throws IOException {
 		return new RdmaProxyEndpoint.CustomClientEndpoint(endpointGroup, idPriv, serverSide);
@@ -137,7 +154,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		ByteBuffer dataBuf = endpoint.getDataBuf();//mefi84 endpoint.getDataBuf();
 		dataBuf.clear();
 		System.out.println("RdmaProxyEndpoint::read memory from server: " + dataBuf.asCharBuffer().toString());
-		System.out.println("RdmaProxyEndpoint::string length...: " + dataBuf.asCharBuffer().toString().length());
+		//System.out.println("RdmaProxyEndpoint::string length...: " + dataBuf.asCharBuffer().toString().length());
 
 		/*for (int i = 10; i <= 100; ){
 			postSend.getWrMod(0).getSgeMod(0).setLength(i);
@@ -212,9 +229,26 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 		sendWR = endpoint.getSendWR();
 		sgeSend = new IbvSge();
-		sgeSend.setAddr(endpoint.dataMr.getAddr()); 
-		sgeSend.setLength(endpoint.dataMr.getLength());
-		sgeSend.setLkey(endpoint.dataMr.getLkey());
+		
+		ByteBuffer dataBigBuf = null;
+		IbvMr dataBigMr;
+		Boolean bigBuf = false;
+		if (length> dataBuf.capacity()) {
+			System.out.println("bigger dataBuf needed...");
+			//mefi84 read in png size
+			dataBigBuf = ByteBuffer.allocateDirect(2500);
+			dataBigMr = endpoint.registerMemory(dataBigBuf).execute().free().getMr();
+			sgeSend.setAddr(dataBigMr.getAddr()); 
+			sgeSend.setLength(dataBigMr.getLength());
+			sgeSend.setLkey(dataBigMr.getLkey());
+			bigBuf = true;
+		} else {
+			System.out.println("normal dataBuf enough...");
+			sgeSend.setAddr(endpoint.dataMr.getAddr()); 
+			sgeSend.setLength(endpoint.dataMr.getLength());
+			sgeSend.setLkey(endpoint.dataMr.getLkey());
+		}
+		
 		endpoint.sgeList = new LinkedList<IbvSge>();
 		endpoint.sgeList.add(sgeSend);
 		sendWR.setSg_list(endpoint.sgeList);
@@ -234,13 +268,26 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		//sendBuf
 		workCompEv = endpoint.getWcEvents().take();
 		//IBV_WC_RDMA_READ(2)
-		System.out.println("PNG 3....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+		System.out.println("PNG 3....request was=opcode="+ workCompEv.getOpcode()+" png should now be in buffer");
 
 				//we should have the content of the remote buffer in our own local buffer now
-		dataBuf = endpoint.getDataBuf();//mefi84 endpoint.getDataBuf();
+		if (bigBuf)
+			dataBuf = dataBigBuf;
+		else
+			dataBuf = endpoint.getDataBuf();//mefi84 endpoint.getDataBuf();
 		dataBuf.clear();
-		System.out.println("RdmaProxyEndpoint::read memory from server: " + dataBuf.asCharBuffer().toString());
-		System.out.println("RdmaProxyEndpoint::string length...: " + dataBuf.asCharBuffer().toString().length());
+		//System.out.println("RdmaProxyEndpoint::read memory from server: " + dataBuf.asCharBuffer().toString());
+		byte[] pngPicture = new byte[length];
+		System.out.println("dataBuf.array().length hasArray="+dataBuf.hasArray());
+		for (int i=0; i<length;i++) {
+			pngPicture[i] = dataBuf.get(i);
+		}
+		System.out.println("pngPicture.length="+pngPicture.length);
+		
+		System.out.println("write png to "+ pathStaticPages+ "network.png");
+
+		write_png(pngPicture);
+		//System.out.println("RdmaProxyEndpoint::string length...: " + dataBuf.asCharBuffer().toString().length());
 		
 		
 //////////////////final

@@ -50,12 +50,13 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 			throws IOException 
 	{
 		byte[] encoded = Files.readAllBytes(Paths.get(path));
+		/*
 		System.out.println("byte[] encoded.length="+encoded.length);
 		String temp = new String(encoded, encoding);
 		Files.write(Paths.get(path+"out"), encoded);
 		byte[] decoded = temp.getBytes(encoding);
 		System.out.println("byte[] decoded.length="+decoded.length);
-
+*/
 		return new String(encoded, encoding);
 	}
 
@@ -167,18 +168,23 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 			
 			//let's prepare a message to be sent to the client
 			//in the message we include the RDMA information of a local buffer which we allow the client to read using a one-sided RDMA operation
-			ByteBuffer dataBuf = endpoint.getDataBuf();
+			ByteBuffer dataBuf = endpoint.getDataBigBuf(); //endpoint.getDataBuf();
 			ByteBuffer sendBuf = endpoint.getSendBuf();
-			IbvMr dataMr = endpoint.getDataMr();
+			IbvMr dataMr = endpoint.getDataBigMr(); //endpoint.getDataMr();
 
 			//read network.png from filesystem
-			String dataMessage = "I'am a png.... really ;-)";
-			System.out.println("dataBuf.capacity()="+dataBuf.capacity() + " and dataMessage.length()=" + dataMessage.length());
-			dataBuf.asCharBuffer().put(dataMessage);
-
+			//String dataMessage = "I'am a png.... really ;-)";
+			//System.out.println("dataBuf.capacity()="+dataBuf.capacity() + " and dataMessage.length()=" + dataMessage.length());
+			//dataBuf.asCharBuffer().put(dataMessage);
+			dataBuf.clear();
+			//dataBuf.asCharBuffer().put(networkPng);
+			//for (int i=0; i<networkPng.length;i++) {
+				dataBuf.put(networkPng);
+			//}
+			
 			dataBuf.clear();
 			sendBuf.putLong(dataMr.getAddr());
-			sendBuf.putInt((dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
+			sendBuf.putInt(networkPng.length);    //(dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
 			sendBuf.putInt(dataMr.getLkey());
 			sendBuf.clear();
 
@@ -246,6 +252,10 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		private IbvMr sendMr;
 		private ByteBuffer recvBuf;
 		private IbvMr recvMr;
+		
+		//mefi84
+		private ByteBuffer dataBigBuf;
+		private IbvMr dataBigMr;
 
 		private LinkedList<IbvSendWR> wrList_send;
 		private IbvSge sgeSend;
@@ -269,7 +279,7 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 			for (int i = 0; i < buffercount; i++){
 				buffers[i] = ByteBuffer.allocateDirect(buffersize);
 			}
-
+		
 			this.wrList_send = new LinkedList<IbvSendWR>();
 			this.sgeSend = new IbvSge();
 			this.sgeList = new LinkedList<IbvSge>();
@@ -300,6 +310,11 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 			this.sendMr = mrlist[1];
 			this.recvBuf = buffers[2];
 			this.recvMr = mrlist[2];
+			
+			//mefi84 read in png size
+			this.dataBigBuf = ByteBuffer.allocateDirect(2500);
+			this.dataBigMr = registerMemory(this.dataBigBuf).execute().free().getMr();
+
 
 			sgeSend.setAddr(sendMr.getAddr());
 			sgeSend.setLength(sendMr.getLength());
@@ -342,6 +357,11 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		public ByteBuffer getDataBuf() {
 			return dataBuf;
 		}
+		
+		//mefi84
+		public ByteBuffer getDataBigBuf() {
+			return dataBigBuf;
+		}
 
 		public ByteBuffer getSendBuf() {
 			return sendBuf;
@@ -361,6 +381,11 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 
 		public IbvMr getDataMr() {
 			return dataMr;
+		}
+		
+		//mefi84
+		public IbvMr getDataBigMr() {
+			return dataBigMr;
 		}
 
 		public IbvMr getSendMr() {
