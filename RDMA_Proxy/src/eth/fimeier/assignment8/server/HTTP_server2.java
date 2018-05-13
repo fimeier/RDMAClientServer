@@ -1,31 +1,30 @@
 package eth.fimeier.assignment8.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.util.List;
 import java.util.Set;
 
 import com.ibm.disni.examples.ReadClient;
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 
 
-public class HTTP_server {
+public class HTTP_server2 {
 
 	private String PROXYSITE = "null";
 
 	private HttpServer server;
+	
+	private String rdmaServerIp = "192.168.170.30";
+    //private int rdmaServerPort = 1919;
 
-
-
-	public HTTP_server(int port, String PROXYSITE) throws IOException {
+	//Todo Threads... damit Parallele Anfragen auch im Proxy
+	
+	public HTTP_server2(int port, String PROXYSITE) throws IOException {
 
 		this.PROXYSITE = PROXYSITE;
 
@@ -38,46 +37,34 @@ public class HTTP_server {
 
 	class MyHandler implements HttpHandler {
 		public void handle(HttpExchange t) throws IOException {
-
-			/*
-			 * The typical life-cycle of a HttpExchange is shown in the sequence below.
-			 */
-
-			//Get the request method
-			String reqMethod = t.getRequestMethod();
 			
-			String Uri = t.getRequestHeaders().get("Uri").get(0);
-			
+			System.out.println("call HTTP_server");
 
-		
-			/* Todo
-			 * Abort if !reqURI.equals("www.rdmawebpage.com/")
-			 */
-			if (!Uri.equals("www.rdmawebpage.com/") || !reqMethod.equals("GET")){
+			String user_input = "null";
+			if (t.getRequestURI().getQuery() != null)
+				user_input = java.net.URLDecoder.decode(t.getRequestURI().getQuery(), "UTF-8");
+			System.out.println("user_input after decoding: "+user_input);
 
-				byte[] resp = new byte[0];
-				t.sendResponseHeaders(404, resp.length);
-				OutputStream os = t.getResponseBody();
-				os.write(resp);
-				os.close();
-				System.out.println("Server: Send 404 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + Uri);
-				return;
+			//System.out.println("call backend...");
+			String response = "";
+			try {
+				//response = backend(user_input);
+				System.out.println("callRdmaHTTPServerEndpoint()..");
+				response = callRdmaHTTPServerEndpoint();
+
+			}
+			//Todo 404 HTTP Response HTTP 504 (Gateway Time-out)
+			catch(Exception e) {
+				e.printStackTrace();
+				response = backend("func=MAIN");
 			}
 
-			System.out.println("Server: Prepare response for proxy.... reqMethod / reqURI = " + reqMethod + " / " + Uri);
-			
-			/*
-			 * todo
-			 */
-			
-			System.out.println("Return response for proxy.... reqMethod / reqURI = " + reqMethod + " / " + Uri);
-			String response = "test response from server....";
+			//System.out.println("returned from backend...\n");
 			byte[] resp = response.getBytes();
 			t.sendResponseHeaders(200, resp.length);
 			OutputStream os = t.getResponseBody();
 			os.write(resp);
 			os.close();
-			System.out.println("\n");
 		}
 
 	}
@@ -85,8 +72,7 @@ public class HTTP_server {
 	private String backend(String user_input) {
 		return "Blubs";
 	}
-
-
+	
 	private String callRdmaHTTPServerEndpoint() {
 		String result = "null";
 		String[] args = {"-a", "192.168.170.30"};
@@ -97,8 +83,8 @@ public class HTTP_server {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-
+		
+		
 		return result;
 	}
 

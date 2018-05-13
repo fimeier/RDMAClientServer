@@ -7,6 +7,7 @@ public class Proxy_start {
 
 	public static void main(String[] args) throws Exception {
 
+		/*
 		String result = "null";
 		String[] args2 = {"-a", "192.168.170.30"};
 		RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
@@ -16,7 +17,7 @@ public class Proxy_start {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+		*/
 			
 		/*
 		 * Proxy Settings
@@ -25,7 +26,7 @@ public class Proxy_start {
 		String proxysite = "www.rdmawebpage.com";
 		
 		System.out.println("Start proxy on port for "+proxyPort);
-		//Proxy web_bitcoin = new Proxy(proxyPort, proxysite);
+		Proxy proxy = new Proxy(proxyPort, proxysite);
 		System.out.println("Proxy started...");
 	}
 }
