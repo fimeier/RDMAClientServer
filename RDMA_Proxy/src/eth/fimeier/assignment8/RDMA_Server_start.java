@@ -3,12 +3,12 @@ package eth.fimeier.assignment8;
 import eth.fimeier.assignment8.server.HTTP_server;
 import eth.fimeier.assignment8.server.RdmaHTTPServerEndpoint;
 
-public class HTTP_RDMA_Server_start {
+public class RDMA_Server_start {
 
 	public static void main(String[] args) throws Exception {
 
 		
-		/*
+		
 		String result = "null";
 		String[] args2 = {"-a", "192.168.170.30"};
 		RdmaHTTPServerEndpoint rdmaServer = new RdmaHTTPServerEndpoint();
@@ -18,16 +18,7 @@ public class HTTP_RDMA_Server_start {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		*/
-		
-		/*
-		 * Proxy Settings
-		 */
-		int proxyPort = 8080;
-		String proxysite = "www.rdmawebpage.com";
-		System.out.println("Start HTTP_RDMA_Server on port for "+proxyPort);
-		HTTP_server web = new HTTP_server(proxyPort, proxysite);
-		System.out.println("Proxy started...");
+	
 	}
 }
 

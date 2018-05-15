@@ -22,7 +22,7 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 	private RdmaActiveEndpointGroup<RdmaHTTPServerEndpoint_save.CustomServerEndpoint> endpointGroup;
 	private String ipAddress;
 	private int port;
-	
+
 	//mefi84 change path.. auto buff size??
 	private static int BUFFERSIZE_HTML = 300;//208; //100
 	private static int BUFFERSIZE_PNG = 2*2437;
@@ -33,7 +33,7 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 	public RdmaHTTPServerEndpoint_save.CustomServerEndpoint createEndpoint(RdmaCmId idPriv, boolean serverSide) throws IOException {
 		return new RdmaHTTPServerEndpoint_save.CustomServerEndpoint(endpointGroup, idPriv, serverSide);
 	}
-	
+
 	public String get_index() {
 		String path = pathStaticPages+ "index.html";
 		String output = "";
@@ -45,20 +45,21 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 		}
 		return output;
 	}
-	
+
 	String readFileAsString(String path, Charset encoding) 
 			throws IOException 
 	{
 		byte[] encoded = Files.readAllBytes(Paths.get(path));
+		/*
 		System.out.println("byte[] encoded.length="+encoded.length);
 		String temp = new String(encoded, encoding);
 		Files.write(Paths.get(path+"out"), encoded);
 		byte[] decoded = temp.getBytes(encoding);
 		System.out.println("byte[] decoded.length="+decoded.length);
-
+*/
 		return new String(encoded, encoding);
 	}
-	
+
 	public byte[] get_png() {
 		String path = pathStaticPages+ "network.png";
 		try {
@@ -69,9 +70,9 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 			e.printStackTrace();
 		}
 		return null;
-		
+
 	}
-	
+
 	byte[] readFileAsByteArray(String path, Charset encoding) 
 			throws IOException 
 	{
@@ -79,10 +80,11 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 
 		return encoded;
 	}
-	
-	
+
+
 
 	public void run() throws Exception {
+		//init and connection
 		//create a EndpointGroup. The RdmaActiveEndpointGroup contains CQ processing and delivers CQ event to the endpoint.dispatchCqEvent() method.
 		endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(1000, false, 128, 4, 128);
 		endpointGroup.init(this);
@@ -98,51 +100,123 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 		//while (true) {
 		RdmaHTTPServerEndpoint_save.CustomServerEndpoint endpoint = serverEndpoint.accept();
 		System.out.println("RdmaHTTPServerEndpoint::connection accepted ");
+		/////////////////////////////////////////////
 
-		//let's prepare a message to be sent to the client
-		//in the message we include the RDMA information of a local buffer which we allow the client to read using a one-sided RDMA operation
-		ByteBuffer dataBuf = endpoint.getDataBuf();
-		ByteBuffer sendBuf = endpoint.getSendBuf();
-		IbvMr dataMr = endpoint.getDataMr();
-		
-		//read index.html from filesystem
-		String dataMessage = get_index(); //"<html><body><h1>Success!</h1><br/><img src=\"network.png\" alt=\"RDMA Read Image Missing!\"/></body></html>";
-		//beachte String +1 Problem....
-		System.out.println("dataBuf.capacity()="+dataBuf.capacity() + " and dataMessage.length()=" + dataMessage.length());
-		
 
-		dataBuf.asCharBuffer().put(dataMessage);
-		//dataBuf.asCharBuffer().put("This is a RDMA/read on stag " + dataMr.getLkey() + " !");
-		
-		
-		dataBuf.clear();
-		sendBuf.putLong(dataMr.getAddr());
-		sendBuf.putInt(dataMr.getLength());
-		sendBuf.putInt(dataMr.getLkey());
-		sendBuf.clear();
+		System.out.println("Server waiting for requests.....");
+		IbvWC workCompEv = endpoint.getWcEvents().take();
+		//IBV_WC_RECV(128)
 
-		//post the operation to send the message
-		System.out.println("RdmaHTTPServerEndpoint::sending message for Lkey()"+dataMr.getLkey());
-		endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
-		//we have to wait for the CQ event, only then we know the message has been sent out
-		IbvWC workCompEvent = endpoint.getWcEvents().take();
-		
-		//read Image
-		byte [] networkPng = get_png();
-		System.out.println("networkPng.length()="+networkPng.length);
-				
+		String request = endpoint.recvBuf.asCharBuffer().toString();
+		System.out.println("HTML-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
+
+		///////////////send html	
+		if (request.startsWith("getIndex.html")){
+			//add fresh recvBuf
+			endpoint.recvBuf.clear();
+			endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
+			//scheint Buffer nicht wirklich zu löschen
+			System.out.println("request after deletion="+endpoint.recvBuf.asCharBuffer().toString());
+			//let's prepare a message to be sent to the client
+			//in the message we include the RDMA information of a local buffer which we allow the client to read using a one-sided RDMA operation
+			ByteBuffer dataBuf = endpoint.getDataBuf();
+			ByteBuffer sendBuf = endpoint.getSendBuf();
+			IbvMr dataMr = endpoint.getDataMr();
+
+			//read index.html from filesystem
+			String dataMessage = get_index(); //"<html><body><h1>Success!</h1><br/><img src=\"network.png\" alt=\"RDMA Read Image Missing!\"/></body></html>";
+			//beachte String +1 Problem....
+			System.out.println("dataBuf.capacity()="+dataBuf.capacity() + " and dataMessage.length()=" + dataMessage.length());
+
+
+			dataBuf.asCharBuffer().put(dataMessage);
+			//dataBuf.asCharBuffer().put("This is a RDMA/read on stag " + dataMr.getLkey() + " !");
+
+
+			dataBuf.clear();
+			sendBuf.putLong(dataMr.getAddr());
+			//sendBuf.putInt(dataMr.getLength()); //mefi... her allenfalls Länger der Daten angeben....
+			//2*103=206 für index.html
+			sendBuf.putInt((dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
+			sendBuf.putInt(dataMr.getLkey());
+			sendBuf.clear();
+
+			//post the operation to send the message
+			System.out.println("RdmaHTTPServerEndpoint::sending message for Lkey()"+dataMr.getLkey());
+			endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
+			//we have to wait for the CQ event, only then we know the message has been sent out
+			workCompEv = endpoint.getWcEvents().take();
+			//IBV_WC_SEND(0)
+			System.out.println("HTML-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+
+
+		}
+		///////////////send PNG
+		workCompEv = endpoint.getWcEvents().take();
+		request = endpoint.recvBuf.asCharBuffer().toString();
+		System.out.println("PNG-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+
+		if (request.startsWith("getnetwork.png")){
+			//read Image
+			byte [] networkPng = get_png();
+			System.out.println("networkPng.length()="+networkPng.length);
+			//create bigger buffer (or hardcode it...)
+			//networkPng.length
+			//add fresh recvBuf
+			endpoint.recvBuf.clear();
+			endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
+			
+			//let's prepare a message to be sent to the client
+			//in the message we include the RDMA information of a local buffer which we allow the client to read using a one-sided RDMA operation
+			ByteBuffer dataBuf = endpoint.getDataBigBuf(); //endpoint.getDataBuf();
+			ByteBuffer sendBuf = endpoint.getSendBuf();
+			IbvMr dataMr = endpoint.getDataBigMr(); //endpoint.getDataMr();
+
+			//read network.png from filesystem
+			//String dataMessage = "I'am a png.... really ;-)";
+			//System.out.println("dataBuf.capacity()="+dataBuf.capacity() + " and dataMessage.length()=" + dataMessage.length());
+			//dataBuf.asCharBuffer().put(dataMessage);
+			dataBuf.clear();
+			//dataBuf.asCharBuffer().put(networkPng);
+			//for (int i=0; i<networkPng.length;i++) {
+				dataBuf.put(networkPng);
+			//}
+			
+			dataBuf.clear();
+			sendBuf.putLong(dataMr.getAddr());
+			sendBuf.putInt(networkPng.length);    //(dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
+			sendBuf.putInt(dataMr.getLkey());
+			sendBuf.clear();
+
+			//post the operation to send the message
+			System.out.println("RdmaHTTPServerEndpoint::sending message to receive NETWORK.PNG Lkey()"+dataMr.getLkey());
+			endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
+			//we have to wait for the CQ event, only then we know the message has been sent out
+			workCompEv = endpoint.getWcEvents().take();
+			//IBV_WC_SEND(0)
+			System.out.println("PNG-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+
+
+		}
+
+		//////////////////final		
 		//let's wait for the final message to be received. We don't need to check the message itself, just the CQ event is enough.
-		workCompEvent = endpoint.getWcEvents().take();
-		
-		System.out.println("RdmaHTTPServerEndpoint::final message was="+endpoint.recvBuf.asCharBuffer().toString());
+		workCompEv = endpoint.getWcEvents().take();
+		//IBV_WC_RECV(128)
+		request = endpoint.recvBuf.asCharBuffer().toString();
+		if (request.startsWith("final message close connection")){
+			System.out.println("3. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
 
-		//mefi84
-		
+			System.out.println("RdmaHTTPServerEndpoint::final message was="+request);
+		}
+
+
+
 		//close everything
 		endpoint.close();
 		serverEndpoint.close();
 		endpointGroup.close();
-		
+
 		//}
 	}
 
@@ -178,6 +252,10 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 		private IbvMr sendMr;
 		private ByteBuffer recvBuf;
 		private IbvMr recvMr;
+		
+		//mefi84
+		private ByteBuffer dataBigBuf;
+		private IbvMr dataBigMr;
 
 		private LinkedList<IbvSendWR> wrList_send;
 		private IbvSge sgeSend;
@@ -201,7 +279,7 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 			for (int i = 0; i < buffercount; i++){
 				buffers[i] = ByteBuffer.allocateDirect(buffersize);
 			}
-
+		
 			this.wrList_send = new LinkedList<IbvSendWR>();
 			this.sgeSend = new IbvSge();
 			this.sgeList = new LinkedList<IbvSge>();
@@ -219,7 +297,7 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 		//This guarantees that at least one recv operation will be posted at the moment this endpoint is connected.
 		public void init() throws IOException{
 			super.init();
-			
+
 			//Read Files
 
 			for (int i = 0; i < buffercount; i++){
@@ -232,6 +310,11 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 			this.sendMr = mrlist[1];
 			this.recvBuf = buffers[2];
 			this.recvMr = mrlist[2];
+			
+			//mefi84 read in png size
+			this.dataBigBuf = ByteBuffer.allocateDirect(2500);
+			this.dataBigMr = registerMemory(this.dataBigBuf).execute().free().getMr();
+
 
 			sgeSend.setAddr(sendMr.getAddr());
 			sgeSend.setLength(sendMr.getLength());
@@ -274,6 +357,11 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 		public ByteBuffer getDataBuf() {
 			return dataBuf;
 		}
+		
+		//mefi84
+		public ByteBuffer getDataBigBuf() {
+			return dataBigBuf;
+		}
 
 		public ByteBuffer getSendBuf() {
 			return sendBuf;
@@ -293,6 +381,11 @@ public class RdmaHTTPServerEndpoint_save implements RdmaEndpointFactory<RdmaHTTP
 
 		public IbvMr getDataMr() {
 			return dataMr;
+		}
+		
+		//mefi84
+		public IbvMr getDataBigMr() {
+			return dataBigMr;
 		}
 
 		public IbvMr getSendMr() {

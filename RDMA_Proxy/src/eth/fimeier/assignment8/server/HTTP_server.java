@@ -71,7 +71,8 @@ public class HTTP_server {
 			 */
 			
 			System.out.println("Return response for proxy.... reqMethod / reqURI = " + reqMethod + " / " + Uri);
-			String response = "test response from server....";
+			//String response = "test response from server.... " + getMetaDataIndexHtml();
+			String response = getMetaDataIndexHtml();
 			byte[] resp = response.getBytes();
 			t.sendResponseHeaders(200, resp.length);
 			OutputStream os = t.getResponseBody();
@@ -80,6 +81,15 @@ public class HTTP_server {
 			System.out.println("\n");
 		}
 
+	}
+	
+	private String getMetaDataIndexHtml() {
+		long addr = 666666;
+		int length = 22;
+		int lkey = 123456;
+
+		String json = "{\"result\": {\"Addr\": \""+addr+"\",\"Length\": \""+length+"\",\"Lkey\": \""+lkey+"\"}}";
+		return json;
 	}
 
 	private String backend(String user_input) {
