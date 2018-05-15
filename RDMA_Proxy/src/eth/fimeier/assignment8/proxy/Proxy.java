@@ -1,5 +1,6 @@
 package eth.fimeier.assignment8.proxy;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,6 +10,8 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -53,10 +56,13 @@ public class Proxy {
 		server.createContext("/", new MyHandler());
 		server.setExecutor(null); // creates a default executor
 		server.start();
+
+
 	}
 
 	class MyHandler implements HttpHandler {
 		public void handle(HttpExchange t) throws IOException {
+
 
 			String reqMethod = t.getRequestMethod();
 			String reqURI = t.getRequestURI().getHost() +  t.getRequestURI().getPath().toString();
@@ -64,7 +70,7 @@ public class Proxy {
 			/* Todo
 			 * Abort if !reqURI.equals("www.rdmawebpage.com/")
 			 */
-			if (!reqURI.equals("www.rdmawebpage.com/") || !reqMethod.equals("GET")){
+			if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET")){
 				byte[] resp = new byte[0];
 				t.sendResponseHeaders(404, resp.length);
 				OutputStream os = t.getResponseBody();
@@ -73,6 +79,24 @@ public class Proxy {
 				System.out.println("Proxy: Send 404 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 				return;
 			}
+
+			//remove !!!!!!!!!
+			if (reqURI.equals("www.rdmawebpage.com/")) {
+
+				String response ="<html><body><h1>Success!</h1><br/><img src=\"network.png\" alt=\"RDMA REad Image Missing!\"/></body></html>";
+				byte[] resp = response.getBytes();
+
+				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+
+				t.sendResponseHeaders(200, resp.length);
+				OutputStream os = t.getResponseBody();
+				os.write(resp);
+				os.close();
+				System.out.println("\n");
+				return;
+			}
+
+
 
 			/*
 			 * 
@@ -83,6 +107,9 @@ public class Proxy {
 			 * 
 			 * 
 			 * */
+
+			/*
+			 * Implementation with HTTP
 			System.out.println("Proxy: Forward response to server.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 
 			URL url = null;
@@ -106,15 +133,6 @@ public class Proxy {
 				InputStream retS = remoteConnection.getInputStream();
 
 				int cl = remoteConnection.getContentLength();
-				//byte[] respServer = new byte[cl]; 
-
-
-
-				/*for (int i = 1; i<= cl; i++) {
-					respServer = retS.read();
-
-				}*/
-				//System.out.println("cl="+cl + " retS"+retS);
 
 				int respCode = remoteConnection.getResponseCode();
 				if (respCode==200) {
@@ -129,32 +147,85 @@ public class Proxy {
 				addr = Long.parseLong(rdmaData.get(0), 10);
 				length = Integer.parseInt(rdmaData.get(1));
 				lkey = Integer.parseInt(rdmaData.get(2));
-				
+
 				System.out.println("Proxy::receiving rdma information over HTTP, addr " + addr + ", length " + length + ", key " + lkey);
 
 			}
 			catch(Exception e) {
-				/*
-				 * if e == "Connection refused (Connection refused)" ... 504.....
-				 */
 				System.out.println(e.getMessage());
+			}
+			 */
+
+			String[] args2 = {"-a", "192.168.170.30"};
+			RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
+			RdmaProxyEndpoint.getHTML = reqURI.equals("www.rdmawebpage.com/") ? true : false;
+			byte[] rdmaResult = null;
+			try {
+				simpleClient.launch(args2);
+				rdmaResult=simpleClient.result;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			if (RdmaProxyEndpoint.getHTML) {
+				String result = new String(rdmaResult, Charset.defaultCharset());
+				System.out.println("rdmaResult as string="+result);
+
+				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+
+				String response = result;
+				//response ="<html><body><h1>Success!</h1><br/><img src=\"network.png\" alt=\"RDMA REad Image Missing!\"/></body></html>";
+				byte[] resp = response.getBytes();
+
+				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+
+				t.sendResponseHeaders(200, resp.length);
+				OutputStream os = t.getResponseBody();
+				os.write(resp);
+				os.close();
+				System.out.println("\n");
+			}
+			else {
+				System.out.println("rdmaResult should be the png.....");
+
+				//test write png
+				String absolutePath = new File("").getAbsolutePath() ;
+				String pathStaticPages = absolutePath + "/src/eth/fimeier/assignment8/proxy/temp/";
+				String path = pathStaticPages+ "PROXYnetwork.png";
+				try {
+					Files.write(Paths.get(path), rdmaResult);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+
+				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+
+				//png in rdmaResult
+				String response ="Dummyresponse... replace with png";
+				//byte[] resp = response.getBytes();
+
+				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+
+				Headers headers = t.getResponseHeaders();
+				headers.set("Content-Type", "image/png");
+				//System.out.println("headers.keySet().toString()="+headers.keySet().toString());
+				System.out.println("rdmaResult.length="+rdmaResult.length);
+				t.sendResponseHeaders(200, 0); //rdmaResult.length
+				OutputStream os = t.getResponseBody();
+				os.write(rdmaResult);
+				os.close();
+				System.out.println("\n");
+
 			}
 
 
-			System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-			/*
-			 * todo
-			 */
 
-			System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 
-			String response = "test response from proxy; Proxy::receiving rdma information over HTTP, addr " + addr + ", length " + length + ", key " + lkey;
-			byte[] resp = response.getBytes();
-			t.sendResponseHeaders(200, resp.length);
-			OutputStream os = t.getResponseBody();
-			os.write(resp);
-			os.close();
-			System.out.println("\n");
+
+
 		}
 
 	}
@@ -164,7 +235,7 @@ public class Proxy {
 		List<String> result = new ArrayList<String>();
 
 		final JsonParser parser = Json.createParser(new StringReader(jsonString));
-		
+
 		String key = null;
 		String value = null;
 		while (parser.hasNext()) {

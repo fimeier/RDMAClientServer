@@ -53,7 +53,7 @@ public class HTTP_server {
 			/* Todo
 			 * Abort if !reqURI.equals("www.rdmawebpage.com/")
 			 */
-			if (!Uri.equals("www.rdmawebpage.com/") || !reqMethod.equals("GET")){
+			if (! (Uri.equals("www.rdmawebpage.com/") || Uri.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET")){
 
 				byte[] resp = new byte[0];
 				t.sendResponseHeaders(404, resp.length);
@@ -72,7 +72,7 @@ public class HTTP_server {
 			
 			System.out.println("Return response for proxy.... reqMethod / reqURI = " + reqMethod + " / " + Uri);
 			//String response = "test response from server.... " + getMetaDataIndexHtml();
-			String response = getMetaDataIndexHtml();
+			String response = Uri.equals("www.rdmawebpage.com/") ? getMetaDataIndexHtml():getMetaDataNetworkPNG();
 			byte[] resp = response.getBytes();
 			t.sendResponseHeaders(200, resp.length);
 			OutputStream os = t.getResponseBody();
@@ -87,6 +87,15 @@ public class HTTP_server {
 		long addr = 666666;
 		int length = 22;
 		int lkey = 123456;
+
+		String json = "{\"result\": {\"Addr\": \""+addr+"\",\"Length\": \""+length+"\",\"Lkey\": \""+lkey+"\"}}";
+		return json;
+	}
+	
+	private String getMetaDataNetworkPNG() {
+		long addr = 6666667;
+		int length = 2234;
+		int lkey = 1234563;
 
 		String json = "{\"result\": {\"Addr\": \""+addr+"\",\"Length\": \""+length+"\",\"Lkey\": \""+lkey+"\"}}";
 		return json;

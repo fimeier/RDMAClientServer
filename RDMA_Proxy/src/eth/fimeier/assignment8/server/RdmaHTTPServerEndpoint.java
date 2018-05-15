@@ -75,14 +75,14 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 	}
 
 
-
 	public void run() throws Exception {
 
 		//init and connection
 		//create a EndpointGroup. The RdmaActiveEndpointGroup contains CQ processing and delivers CQ event to the endpoint.dispatchCqEvent() method.
 		endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(1000, false, 128, 4, 128);
 		endpointGroup.init(this);
-		//create a server endpoint
+
+		//create a server endpoint		
 		RdmaServerEndpoint<RdmaHTTPServerEndpoint.CustomServerEndpoint> serverEndpoint = endpointGroup.createServerEndpoint();
 
 		//we can call bind on a server endpoint, just like we do with sockets
@@ -90,7 +90,6 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		serverEndpoint.bind(uri);
 		System.out.println("RdmaHTTPServerEndpoint::server bound to address" + uri.toString());
 
-		for (int i=0;i<10;i++) {
 
 		//we can accept new connections
 		System.out.println("RdmaHTTPServerEndpoint::Waiting for new client connection");
@@ -98,98 +97,90 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		System.out.println("RdmaHTTPServerEndpoint::connection accepted ");
 		/////////////////////////////////////////////
 
+		Boolean closeConnection = false;
+		while(!closeConnection) {
 
-		System.out.println("Server waiting for requests.....");
-		IbvWC workCompEv = endpoint.getWcEvents().take();
-		//IBV_WC_RECV(128)
+			System.out.println("Server waiting for requests.....");
+			IbvWC workCompEv = endpoint.getWcEvents().take();
+			//IBV_WC_RECV(128)
 
-		String request = endpoint.recvBuf.asCharBuffer().toString();
-		System.out.println("HTML-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
-
-		///////////////send html	
-		if (request.startsWith("getIndex.html")){
-			//add fresh recvBuf
-			endpoint.recvBuf.clear();
-			endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
-			
-			ByteBuffer dataBuf = endpoint.getDataBuf();
-			ByteBuffer sendBuf = endpoint.getSendBuf();
-			IbvMr dataMr = endpoint.getDataMr();
+			String requestTemp = endpoint.recvBuf.asCharBuffer().toString();
+			String request = requestTemp.startsWith("getIndex.html") ? "getIndex.html": requestTemp.startsWith("getnetwork.png") ? "getnetwork.png" : "final message close connection"; 
+			System.out.println("switch request="+request);
 
 
-			sendBuf.putLong(dataMr.getAddr());
-			sendBuf.putInt(html_size); //mefi... her allenfalls Länger der Daten angeben....
-			sendBuf.putInt(dataMr.getLkey());
-			sendBuf.clear();
+			switch(request) {
 
-			//post the operation to send the message
-			System.out.println("RdmaHTTPServerEndpoint::sending message for Lkey()"+dataMr.getLkey());
-			endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
-			//we have to wait for the CQ event, only then we know the message has been sent out
-			workCompEv = endpoint.getWcEvents().take();
-			//IBV_WC_SEND(0)
-			System.out.println("HTML-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			case "getIndex.html":
+			{
+				///////////////send html	
+				System.out.println("HTML-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
+				//add fresh recvBuf
+				endpoint.recvBuf.clear();
+				endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
+
+				ByteBuffer dataBuf = endpoint.getDataBuf();
+				ByteBuffer sendBuf = endpoint.getSendBuf();
+				IbvMr dataMr = endpoint.getDataMr();
+
+
+				sendBuf.putLong(dataMr.getAddr());
+				sendBuf.putInt(html_size); //mefi... her allenfalls Länger der Daten angeben....
+				sendBuf.putInt(dataMr.getLkey());
+				sendBuf.clear();
+
+				//post the operation to send the message
+				System.out.println("RdmaHTTPServerEndpoint::sending message for Lkey()"+dataMr.getLkey());
+				endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
+				//we have to wait for the CQ event, only then we know the message has been sent out
+				workCompEv = endpoint.getWcEvents().take();
+				//IBV_WC_SEND(0)
+				System.out.println("HTML-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+
+				break;
+			}
+			case "getnetwork.png":
+			{
+				///////////////send PNG
+
+				System.out.println("PNG-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+
+				//add fresh recvBuf
+				endpoint.recvBuf.clear();
+				endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
+				ByteBuffer sendBuf = endpoint.getSendBuf();
+				IbvMr dataBigMr = endpoint.getDataBigMr(); //endpoint.getDataMr();
+
+				sendBuf.putLong(dataBigMr.getAddr());
+				sendBuf.putInt(png_size);    //(dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
+				sendBuf.putInt(dataBigMr.getLkey());
+				sendBuf.clear();
+
+				//post the operation to send the message
+				System.out.println("RdmaHTTPServerEndpoint::sending message to receive NETWORK.PNG Lkey()"+dataBigMr.getLkey());
+				endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
+				//we have to wait for the CQ event, only then we know the message has been sent out
+				workCompEv = endpoint.getWcEvents().take();
+				//IBV_WC_SEND(0)
+				System.out.println("PNG-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+				break;
+			}
+			case "final message close connection":
+			{
+				System.out.println("3. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
+				System.out.println("RdmaHTTPServerEndpoint::final message was="+request);
+				closeConnection = true;
+				break;
+
+			}
+			}
 
 		}
-		///////////////send PNG
-		workCompEv = endpoint.getWcEvents().take();
-		request = endpoint.recvBuf.asCharBuffer().toString();
-		System.out.println("PNG-SERVER 1. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
-
-		if (request.startsWith("getnetwork.png")){
-			endpoint.recvBuf.clear();
-			endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
-			ByteBuffer sendBuf = endpoint.getSendBuf();
-			IbvMr dataBigMr = endpoint.getDataBigMr(); //endpoint.getDataMr();
-
-			sendBuf.putLong(dataBigMr.getAddr());
-			sendBuf.putInt(png_size);    //(dataMessage.length())*2); //mefi... her allenfalls Länger der Daten angeben....
-			sendBuf.putInt(dataBigMr.getLkey());
-			sendBuf.clear();
-
-			//post the operation to send the message
-			System.out.println("RdmaHTTPServerEndpoint::sending message to receive NETWORK.PNG Lkey()"+dataBigMr.getLkey());
-			endpoint.postSend(endpoint.getWrList_send()).execute(); //mefi84 .free();
-			//we have to wait for the CQ event, only then we know the message has been sent out
-			workCompEv = endpoint.getWcEvents().take();
-			//IBV_WC_SEND(0)
-			System.out.println("PNG-SERVER 2. ....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
-
-		}
-
-		//////////////////final		
-		//let's wait for the final message to be received. We don't need to check the message itself, just the CQ event is enough.
-		workCompEv = endpoint.getWcEvents().take();
-		//IBV_WC_RECV(128)
-		request = endpoint.recvBuf.asCharBuffer().toString();
-		if (request.startsWith("final message close connection")){
-			System.out.println("3. ....request was=opcode="+ workCompEv.getOpcode() +"  "+request);
-
-			System.out.println("RdmaHTTPServerEndpoint::final message was="+request);
-		}
-		
-		//add fresh recvBuf
-		endpoint.recvBuf.clear();
-		endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
-
-
-
 
 		//close everything
 		endpoint.close();
-		}
-
-		//add fresh recvBuf
-		//endpoint.recvBuf.clear();
-		//endpoint.postRecv(endpoint.getWrList_recv()).execute().free();
-
-
-		//Todo RDMA Server sauber beenden...
 		serverEndpoint.close();
 		endpointGroup.close();
-		
-		
-
 	}
 
 	public void launch(String[] args) throws Exception {
@@ -286,15 +277,16 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 			//mefi84 read in png size
 			this.dataBigBuf = ByteBuffer.allocateDirect(2500);
 			this.dataBigMr = registerMemory(this.dataBigBuf).execute().free().getMr();
-			
+
 			/*
 			 * load index.html and network.png in buffers
 			 */
 			//load index.html from file system and store it in datBuf<=>dataMr
 			String dataMessage = get_index();
-			html_size = dataMessage.length()*2;
+			html_size = dataMessage.length()*2; //TODO siehe put änderung unten 3 Zeilen...
 			dataBuf.clear();
-			dataBuf.asCharBuffer().put(dataMessage);
+			//dataBuf.asCharBuffer().put(dataMessage);
+			dataBuf.put(dataMessage.getBytes());
 			dataBuf.clear();
 			//load network.png from file system and store it in datBigBuf<=>dataBigMr
 			byte [] networkPng = get_png();
