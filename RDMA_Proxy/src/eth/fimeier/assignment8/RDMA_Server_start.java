@@ -10,7 +10,7 @@ public class RDMA_Server_start {
 		
 		
 		String result = "null";
-		String[] args2 = {"-a", "192.168.170.30"};
+		String[] args2 = {"-a", "10.80.51.30"};
 		RdmaHTTPServerEndpoint rdmaServer = new RdmaHTTPServerEndpoint();
 		try {
 			rdmaServer.launch(args2);

@@ -9,7 +9,7 @@ public class Proxy_start {
 
 		/*
 		String result = "null";
-		String[] args2 = {"-a", "192.168.170.30"};
+		String[] args2 = {"-a", "10.80.51.30"};
 		RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
 		try {
 			simpleClient.launch(args2);

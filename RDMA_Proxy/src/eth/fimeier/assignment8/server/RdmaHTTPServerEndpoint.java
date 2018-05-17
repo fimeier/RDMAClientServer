@@ -6,6 +6,8 @@ import com.ibm.disni.rdma.RdmaActiveEndpointGroup;
 import com.ibm.disni.rdma.RdmaEndpointFactory;
 import com.ibm.disni.rdma.RdmaServerEndpoint;
 import com.ibm.disni.rdma.verbs.*;
+import com.ibm.disni.rdma.verbs.SVCPostSend.SendWRMod;
+
 import org.apache.commons.cli.ParseException;
 
 import java.io.File;
@@ -81,6 +83,8 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		//create a EndpointGroup. The RdmaActiveEndpointGroup contains CQ processing and delivers CQ event to the endpoint.dispatchCqEvent() method.
 		endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(1000, false, 128, 4, 128);
 		endpointGroup.init(this);
+
+		for (int i = 0; i< 10; i++) {
 
 		//create a server endpoint		
 		RdmaServerEndpoint<RdmaHTTPServerEndpoint.CustomServerEndpoint> serverEndpoint = endpointGroup.createServerEndpoint();
@@ -178,8 +182,15 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 		}
 
 		//close everything
+		endpoint.deregisterMemory(endpoint.getDataMr());
+		endpoint.deregisterMemory(endpoint.getDataBigMr());
+		endpoint.deregisterMemory(endpoint.getSendMr());
+		endpoint.deregisterMemory(endpoint.getRecvMr());
+
 		endpoint.close();
+		
 		serverEndpoint.close();
+		}
 		endpointGroup.close();
 	}
 

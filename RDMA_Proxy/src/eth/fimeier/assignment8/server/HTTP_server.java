@@ -108,7 +108,7 @@ public class HTTP_server {
 
 	private String callRdmaHTTPServerEndpoint() {
 		String result = "null";
-		String[] args = {"-a", "192.168.170.30"};
+		String[] args = {"-a", "10.80.51.30"};
 		RdmaHTTPServerEndpoint rdmaServer = new RdmaHTTPServerEndpoint();
 		try {
 			rdmaServer.launch(args);

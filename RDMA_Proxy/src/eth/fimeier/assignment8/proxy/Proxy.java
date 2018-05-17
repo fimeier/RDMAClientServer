@@ -41,8 +41,8 @@ public class Proxy {
 
 	private HttpServer server;
 
-	private String rdmaServerIp = "192.168.170.30"; 
-	private String httpServerURI = "http://192.168.170.30:8080";
+	private String rdmaServerIp = "10.80.51.30"; 
+	private String httpServerURI = "http://10.80.51.30:8080";
 	//private int rdmaServerPort = 1919;
 
 	//Todo Threads... damit Parallele Anfragen auch im Proxy
@@ -156,7 +156,7 @@ public class Proxy {
 			}
 			 */
 
-			String[] args2 = {"-a", "192.168.170.30"};
+			String[] args2 = {"-a", "10.80.51.30"};
 			RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
 			RdmaProxyEndpoint.getHTML = reqURI.equals("www.rdmawebpage.com/") ? true : false;
 			byte[] rdmaResult = null;
@@ -264,7 +264,7 @@ public class Proxy {
 
 	private String callRdmaProxyEndpoint() {
 		String result = "null";
-		String[] args = {"-a", "192.168.170.30"};
+		String[] args = {"-a", "10.80.51.30"};
 		RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
 		try {
 			simpleClient.launch(args);
