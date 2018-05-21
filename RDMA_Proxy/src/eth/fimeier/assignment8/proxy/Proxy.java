@@ -81,6 +81,7 @@ public class Proxy {
 			}
 
 			//remove !!!!!!!!!
+			/*
 			if (reqURI.equals("www.rdmawebpage.com/")) {
 
 				String response ="<html><body><h1>Success!</h1><br/><img src=\"network.png\" alt=\"RDMA REad Image Missing!\"/></body></html>";
@@ -95,6 +96,7 @@ public class Proxy {
 				System.out.println("\n");
 				return;
 			}
+			*/
 
 
 
@@ -189,6 +191,7 @@ public class Proxy {
 			else {
 				System.out.println("rdmaResult should be the png.....");
 
+				/*
 				//test write png
 				String absolutePath = new File("").getAbsolutePath() ;
 				String pathStaticPages = absolutePath + "/src/eth/fimeier/assignment8/proxy/temp/";
@@ -199,6 +202,7 @@ public class Proxy {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				*/
 
 
 				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);

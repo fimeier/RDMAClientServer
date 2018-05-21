@@ -78,6 +78,8 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		int length = 0;
 		int lkey = 0;
 		SVCPostSend postSend = null;
+		
+		Boolean bigBuf = false;
 
 		if (getHTML) {
 
@@ -210,18 +212,19 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			//sendWR = endpoint.getSendWR();
 			sgeSend = new IbvSge();
 
-			ByteBuffer dataBigBuf = null;
-			IbvMr dataBigMr;
-			Boolean bigBuf = false;
+			//ByteBuffer dataBigBuf = null;
+			
+			//IbvMr dataBigMr;
+			bigBuf = false;
 			ByteBuffer dataBuf = endpoint.getDataBuf();
 			if (length> dataBuf.capacity()) {
 				System.out.println("bigger dataBuf needed...");
 				//mefi84 read in png size
-				dataBigBuf = ByteBuffer.allocateDirect(2500);
-				dataBigMr = endpoint.registerMemory(dataBigBuf).execute().free().getMr();
-				sgeSend.setAddr(dataBigMr.getAddr()); 
-				sgeSend.setLength(dataBigMr.getLength());
-				sgeSend.setLkey(dataBigMr.getLkey());
+				endpoint.dataBigBuf = ByteBuffer.allocateDirect(2500);
+				endpoint.dataBigMr = endpoint.registerMemory(endpoint.dataBigBuf).execute().free().getMr();
+				sgeSend.setAddr(endpoint.dataBigMr.getAddr()); 
+				sgeSend.setLength(endpoint.dataBigMr.getLength());
+				sgeSend.setLkey(endpoint.dataBigMr.getLkey());
 				bigBuf = true;
 			} else {
 				System.out.println("normal dataBuf enough...");
@@ -256,7 +259,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			//we should have the content of the remote buffer in our own local buffer now
 			if (bigBuf)
-				dataBuf = dataBigBuf;
+				dataBuf = endpoint.dataBigBuf;
 			else
 				dataBuf = endpoint.getDataBuf();//mefi84 endpoint.getDataBuf();
 			dataBuf.clear();
@@ -305,6 +308,14 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 		//close everything
 		System.out.println("closing endpoint");
+		//delete buffers
+		endpoint.deregisterMemory(endpoint.dataMr);
+		if (bigBuf) {
+			endpoint.deregisterMemory(endpoint.dataBigMr);
+		}
+		endpoint.deregisterMemory(endpoint.sendMr);
+		endpoint.deregisterMemory(endpoint.recvMr);
+		
 		endpoint.close();
 		System.out.println("closing endpoint, done");
 		endpointGroup.close();
