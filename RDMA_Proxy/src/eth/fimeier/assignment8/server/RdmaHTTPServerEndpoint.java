@@ -30,6 +30,8 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 	//private static int BUFFERSIZE_PNG = 5000; //2*2437;
 	public static int html_size = 0;
 	public static int png_size = 0;
+	
+	public static Boolean runForeEver = true;
 
 
 	static String absolutePath = new File("").getAbsolutePath() ;
@@ -81,10 +83,13 @@ public class RdmaHTTPServerEndpoint implements RdmaEndpointFactory<RdmaHTTPServe
 
 		//init and connection
 		//create a EndpointGroup. The RdmaActiveEndpointGroup contains CQ processing and delivers CQ event to the endpoint.dispatchCqEvent() method.
-		endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(1000, false, 128, 4, 128);
+		//endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(1000, false, 128, 4, 128);
+		endpointGroup = new RdmaActiveEndpointGroup<CustomServerEndpoint>(10, false, 128, 4, 128);
+
 		endpointGroup.init(this);
 
-		for (int i = 0; i< 10; i++) {
+		while(runForeEver) {
+		//for (int i = 0; i< 10; i++) {
 
 		//create a server endpoint		
 		RdmaServerEndpoint<RdmaHTTPServerEndpoint.CustomServerEndpoint> serverEndpoint = endpointGroup.createServerEndpoint();

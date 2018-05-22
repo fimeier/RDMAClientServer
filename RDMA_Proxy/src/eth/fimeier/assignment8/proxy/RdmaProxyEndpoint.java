@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedList;
@@ -36,7 +34,8 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 	//private static int BUFFERSIZE_PNG = 2*2437;
 	public static int html_size = 0;
 	public static int png_size = 0;
-	public static Boolean getHTML = true; //if false => getPNG
+
+	public static  Boolean getHTML = true; //if false => getPNG
 	public byte[] result = null;
 
 	static String absolutePath = new File("").getAbsolutePath() ;
@@ -58,7 +57,8 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 	}
 
 	public void run() throws Exception {
-		endpointGroup = new RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint>(1000, false, 128, 4, 128);
+		//endpointGroup = new RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint>(1000, false, 128, 4, 128);
+		endpointGroup = new RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint>(10, false, 128, 4, 128);
 		endpointGroup.init(this);
 		RdmaProxyEndpoint.CustomClientEndpoint endpoint = endpointGroup.createEndpoint();
 
@@ -78,7 +78,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		int length = 0;
 		int lkey = 0;
 		SVCPostSend postSend = null;
-		
+
 		Boolean bigBuf = false;
 
 		if (getHTML) {
@@ -95,8 +95,6 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			System.out.println("1....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
 
 
-			//in our custom endpoints we make sure CQ events get stored in a queue, we now query that queue for new CQ events.
-			//in this case a new CQ event means we have received some data, i.e., a message from the server
 			workCompEv = endpoint.getWcEvents().take();
 			// IBV_WC_RECV(128)
 			System.out.println("2....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
@@ -109,6 +107,11 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			length = recvBuf.getInt();
 			lkey = recvBuf.getInt();
 			recvBuf.clear();
+			
+			/*
+			if (2+2==4) {
+				return;
+			}*/
 
 			endpoint.postRecv(endpoint.getWrList_recv()).execute().free(); //correct??? //mefi84
 
@@ -164,11 +167,11 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			catch (Exception e) {
 				System.out.println(e.getMessage());
 			}
-			
-			
+
+
 			String tr = new String(result);
 			System.out.println("$$$RdmaProxyEndpoint$$$ rdmaResult as string="+tr);
-			
+
 		}
 
 		else {
@@ -213,7 +216,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			sgeSend = new IbvSge();
 
 			//ByteBuffer dataBigBuf = null;
-			
+
 			//IbvMr dataBigMr;
 			bigBuf = false;
 			ByteBuffer dataBuf = endpoint.getDataBuf();
@@ -275,12 +278,10 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			//store result
 			result = pngPicture.clone();
-			//result = new byte[length];
-			//dataBuf.get(result, 0, length);
-			
-			//to temp... not neede...
-			write_png(pngPicture);
-			
+
+			//to temp... not needed...
+			//write_png(pngPicture);
+
 		}
 
 		//prepare final message
@@ -315,7 +316,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		}
 		endpoint.deregisterMemory(endpoint.sendMr);
 		endpoint.deregisterMemory(endpoint.recvMr);
-		
+
 		endpoint.close();
 		System.out.println("closing endpoint, done");
 		endpointGroup.close();

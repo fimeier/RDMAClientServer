@@ -5,28 +5,29 @@ import eth.fimeier.assignment8.proxy.RdmaProxyEndpoint;
 
 public class Proxy_start {
 
+	/*
+	 * arg: proxyPort rdmaServerIP
+	 */
 	public static void main(String[] args) throws Exception {
 
+
 		/*
-		String result = "null";
-		String[] args2 = {"-a", "10.80.51.30"};
-		RdmaProxyEndpoint simpleClient = new RdmaProxyEndpoint();
-		try {
-			simpleClient.launch(args2);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
-			
-		/*
-		 * Proxy Settings
+		 * default Settings
 		 */
 		int proxyPort = 8000;
+		String rdmaServerIP = "10.80.51.30";
 		String proxysite = "www.rdmawebpage.com";
-		
-		System.out.println("Start proxy on port for "+proxyPort);
-		Proxy proxy = new Proxy(proxyPort, proxysite);
+
+		if (args.length==2) {
+			proxyPort=Integer.parseInt(args[0]);
+			rdmaServerIP=args[1];
+		} else {
+			System.out.println("Start system with default parameters...");
+		}
+
+
+		System.out.println("Start proxy on port="+proxyPort + " RDMAserverIP=" +rdmaServerIP);
+		Proxy proxy = new Proxy(proxyPort, rdmaServerIP, proxysite);
 		System.out.println("Proxy started...");
 	}
 }
