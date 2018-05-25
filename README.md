@@ -29,14 +29,14 @@ if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.co
 
 ```java
 if (rdmaResult == null) {
-System.out.println("Proxy: Prepare 504 HTTP Response....");
-simpleClient.close();
-t.sendResponseHeaders(504, 0);
-OutputStream os = t.getResponseBody();
-// os.write(resp);
-os.close();
-System.out.println("Proxy: Send 504 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-return;
+  System.out.println("Proxy: Prepare 504 HTTP Response....");
+  simpleClient.close();
+  t.sendResponseHeaders(504, 0);
+  OutputStream os = t.getResponseBody();
+  // os.write(resp);
+  os.close();
+  System.out.println("Proxy: Send 504 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+  return;
 }
 ```
 
