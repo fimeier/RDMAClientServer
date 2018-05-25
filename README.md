@@ -1,3 +1,10 @@
+Folders in this repository
+================================
+1. RDMAClientProxy contains the eclipse project
+2. RDMAServer the server as runnable jar and static content
+3. RDMA_Proxy the client as runnable jar
+
+
 How to start the RDMAClientProxy
 ================================
 * Option 1) use eclipse and execute Proxy_start
