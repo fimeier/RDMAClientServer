@@ -52,6 +52,7 @@ if (rdmaResult == null) {
 * RdmaProxyEndpoint.class is based on the ReadClient example
   * I added some bigger buffers and some helper methods
   * the run() method
+
 ```java
 public void run() throws Exception {
   //..
@@ -87,6 +88,7 @@ public void run() throws Exception {
    * result contains the data
   */
 }
+```
 
 
 
