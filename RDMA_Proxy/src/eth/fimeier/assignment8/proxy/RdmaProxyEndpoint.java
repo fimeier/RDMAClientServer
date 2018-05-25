@@ -27,6 +27,8 @@ import com.ibm.disni.rdma.verbs.SVCPostSend;
 public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.CustomClientEndpoint> {
 
 	private RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint> endpointGroup;
+	private RdmaProxyEndpoint.CustomClientEndpoint endpoint;
+	private Boolean bigBuf = false;
 	private String ipAddress;
 	private int port;
 
@@ -60,9 +62,9 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		//endpointGroup = new RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint>(1000, false, 128, 4, 128);
 		endpointGroup = new RdmaActiveEndpointGroup<RdmaProxyEndpoint.CustomClientEndpoint>(10, false, 128, 4, 128);
 		endpointGroup.init(this);
-		RdmaProxyEndpoint.CustomClientEndpoint endpoint = endpointGroup.createEndpoint();
+		endpoint = endpointGroup.createEndpoint();
 
-		//connect to the server
+		System.out.println("connect to the server...");
 		endpoint.connect(URI.create("rdma://" + ipAddress + ":" + port));
 		//die init methode wird wärend des obigen calls irgendwann auch aufgerufen...
 		InetSocketAddress _addr = (InetSocketAddress) endpoint.getDstAddr();
@@ -79,7 +81,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		int lkey = 0;
 		SVCPostSend postSend = null;
 
-		Boolean bigBuf = false;
+		
 
 		if (getHTML) {
 
@@ -107,7 +109,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			length = recvBuf.getInt();
 			lkey = recvBuf.getInt();
 			recvBuf.clear();
-			
+
 			/*
 			if (2+2==4) {
 				return;
@@ -468,6 +470,26 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			return recvWR;
 		}
 	}
+
+	public void close() throws IOException, InterruptedException {
+
+		
+		//close everything
+		System.out.println("closing endpoint");
+		//delete buffers
+		endpoint.deregisterMemory(endpoint.dataMr);
+		if (bigBuf) {
+			endpoint.deregisterMemory(endpoint.dataBigMr);
+		}
+		endpoint.deregisterMemory(endpoint.sendMr);
+		endpoint.deregisterMemory(endpoint.recvMr);
+
+		endpoint.close();
+		System.out.println("closing endpoint, done");
+		endpointGroup.close();
+
+	}
+	
 
 
 

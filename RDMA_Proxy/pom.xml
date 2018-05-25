@@ -17,6 +17,13 @@
     </plugins>
   </build>
   <dependencies>
+  <!-- https://mvnrepository.com/artifact/com.jcabi/jcabi-aspects -->
+	<dependency>
+   	 <groupId>com.jcabi</groupId>
+  	 	 <artifactId>jcabi-aspects</artifactId>
+    	<version>0.22.6</version>
+	</dependency>
+  
   	<dependency>
   		<groupId>com.ibm.disni</groupId>
   		<artifactId>disni</artifactId>

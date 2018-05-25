@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
+import com.jcabi.aspects.Timeable;
 //import com.ibm.disni.examples.ReadClient;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -38,14 +40,79 @@ public class Proxy {
 
 	}
 
-	class MyHandler implements HttpHandler {
+	public class SimpleClientCall implements Runnable{
+		public RdmaProxyEndpoint simpleClient;
+		String[] args2;
+		public SimpleClientCall(RdmaProxyEndpoint simpleClient_, String[] args2_) {
+			this.simpleClient = simpleClient_;
+			this.args2 = args2_;			
+		}
+
+		@Override
+		@Timeable(limit = 1500, unit = TimeUnit.MILLISECONDS)
+		public void run() {
+			// TODO Auto-generated method stub
+			//simpleClientCall(simpleClient, args2);
+			
+			try {
+				simpleClient.launch(args2);
+				if (Thread.currentThread().isInterrupted()) {
+					System.out.println("IllegalStateException time out !!!!!!!!!!!!!!!!!!!!!!!!!");
+					throw new IllegalStateException("time out");
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+
+		}
+
+		@Timeable(limit = 1500, unit = TimeUnit.MILLISECONDS)
+		void simpleClientCall(RdmaProxyEndpoint simpleClient, String[] args2) {
+			try {
+				System.out.println("simpleClientCall 1...");
+				//while (true) {
+					/*System.out.println("simpleClientCall 2...");
+					System.out.println("simpleClientCall sleep for 10 seconds..");
+					Thread.currentThread().sleep(10000);
+					System.out.println("simpleClientCall return from sleeping...");
+					
+
+
+					if (Thread.currentThread().isInterrupted()) {
+						System.out.println("IllegalStateException time out !!!!!!!!!!!!!!!!!!!!!!!!!");
+						throw new IllegalStateException("time out");
+					}
+					// execution as usual
+					/*
+					System.out.println("simpleClientCall 3...");
+
+					simpleClient.launch(args2);
+					System.out.println("simpleClientCall 4...");
+					*/
+					//return;
+
+
+				//}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}		
+		}
+
+	}
+
+
+	class MyHandler implements HttpHandler {		
+
 		public void handle(HttpExchange t) throws IOException {
 
 
 			String reqMethod = t.getRequestMethod();
 			String reqURI = t.getRequestURI().getHost() +  t.getRequestURI().getPath().toString();
 
-			/* Todo
+			/* 
 			 * Abort if !reqURI.equals("www.rdmawebpage.com/")
 			 */
 			if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET")){
@@ -56,6 +123,8 @@ public class Proxy {
 				os.close();
 				System.out.println("Proxy: Send 404 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 				return;
+			} else {
+				//start a thread and return
 			}
 
 
@@ -64,8 +133,36 @@ public class Proxy {
 			RdmaProxyEndpoint.getHTML = reqURI.equals("www.rdmawebpage.com/") ? true : false;
 			byte[] rdmaResult = null;
 			try {
-				simpleClient.launch(args2);
+				
+				/*
+				 * test with thread
+				 * SimpleClientCall
+				 */
+				SimpleClientCall sc = new SimpleClientCall(simpleClient, args2);
+				Thread tt = (new Thread(sc));
+				tt.start();
+				//tt.
+				int wTime = 2000;
+				System.out.println("join()... todo wait "+wTime+" millisec for result...");
+				tt.join(wTime);
+				
+				//simpleClientCall(simpleClient, args2);
+				//System.out.println("thread started... now calling rdmaclient");
+				//simpleClient.launch(args2);
+				
+				/*
+				 * todo wait for result...
+				 */
+				System.out.println("get result...");
+				
 				rdmaResult=simpleClient.result;
+				if (rdmaResult == null) {
+					
+					simpleClient.close();
+					
+					
+					
+				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
