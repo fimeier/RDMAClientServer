@@ -24,7 +24,8 @@ public class Proxy {
 	private String proxysite = "www.rdmawebpage.com";
 
 	// HTTP 504 Gateway-Timeout
-	private int wTime = 300;
+	private int wTime = 1000;
+
 
 	public Proxy(int port, String rdmaServerIP, String PROXYSITE) throws IOException {
 
@@ -51,9 +52,6 @@ public class Proxy {
 		@Override
 		@Timeable(limit = 1500, unit = TimeUnit.MILLISECONDS)
 		public void run() {
-			// TODO Auto-generated method stub
-			// simpleClientCall(simpleClient, args2);
-
 			try {
 				simpleClient.launch(args2);
 				if (Thread.currentThread().isInterrupted()) {
@@ -76,7 +74,7 @@ public class Proxy {
 			String reqURI = t.getRequestURI().getHost() + t.getRequestURI().getPath().toString();
 
 			/*
-			 * Abort if !reqURI.equals("www.rdmawebpage.com/")
+			 * Abort if not a target content for webserver
 			 */
 			if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET")) {
 				// byte[] resp = new byte[0];
@@ -121,47 +119,30 @@ public class Proxy {
 			}
 
 			if (RdmaProxyEndpoint.getHTML) {
+
 				String result = new String(rdmaResult, Charset.defaultCharset());
 				System.out.println("rdmaResult as string=" + result);
 
-				System.out.println(
-						"Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-
+				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 				String response = result;
-				// response ="<html><body><h1>Success!</h1><br/><img src=\"network.png\"
-				// alt=\"RDMA REad Image Missing!\"/></body></html>";
 				byte[] resp = response.getBytes();
 
 				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-
 				t.sendResponseHeaders(200, resp.length);
 				OutputStream os = t.getResponseBody();
 				os.write(resp);
 				os.close();
 				System.out.println("\n");
+
 			} else {
 				System.out.println("rdmaResult should be the png.....");
 
-				/*
-				 * //test write png String absolutePath = new File("").getAbsolutePath() ;
-				 * String pathStaticPages = absolutePath +
-				 * "/src/eth/fimeier/assignment8/proxy/temp/"; String path = pathStaticPages+
-				 * "PROXYnetwork.png"; try { Files.write(Paths.get(path), rdmaResult); } catch
-				 * (IOException e) { // TODO Auto-generated catch block e.printStackTrace(); }
-				 */
-
-				System.out.println(
-						"Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-
-				// png in rdmaResult
-				String response = "Dummyresponse... replace with png";
-				// byte[] resp = response.getBytes();
+				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 
 				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 
 				Headers headers = t.getResponseHeaders();
 				headers.set("Content-Type", "image/png");
-				// System.out.println("headers.keySet().toString()="+headers.keySet().toString());
 				System.out.println("rdmaResult.length=" + rdmaResult.length);
 				t.sendResponseHeaders(200, 0); // rdmaResult.length
 				OutputStream os = t.getResponseBody();

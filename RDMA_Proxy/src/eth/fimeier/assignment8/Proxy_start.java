@@ -1,7 +1,6 @@
 package eth.fimeier.assignment8;
 
 import eth.fimeier.assignment8.proxy.Proxy;
-import eth.fimeier.assignment8.proxy.RdmaProxyEndpoint;
 
 public class Proxy_start {
 
