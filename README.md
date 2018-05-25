@@ -51,7 +51,8 @@ if (rdmaResult == null) {
 
 * RdmaProxyEndpoint.class is based on the ReadClient example
   * I added some bigger buffers and some helper methods
-  * the run() method
+  * the run() method fetches the index.html or the network.png file and then closes the connection
+  * like in the ReadCLient example, the client asks for the metadata by RDMA send/recv and then issues a one-sided RDMA read opeation to fetch the content from that remote buffer
 
 ```java
 public void run() throws Exception {
