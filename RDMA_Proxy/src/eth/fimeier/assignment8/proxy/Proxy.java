@@ -84,6 +84,8 @@ public class Proxy {
 				os.close();
 				System.out.println("Proxy: Send 404 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 				return;
+			} else {
+				System.out.println("Processing client request: initialising RdmaProxyEndpoint...");
 			}
 
 			String[] args2 = { "-a", rdmaServerIP };
@@ -98,12 +100,13 @@ public class Proxy {
 				SimpleClientCall sc = new SimpleClientCall(simpleClient, args2);
 				Thread tt = (new Thread(sc));
 				tt.start();
-				System.out.println("join()... todo wait " + wTime + " millisec for result...");
+				System.out.println("join("+wTime+")... waiting...");
 				tt.join(wTime);
 
 				System.out.println("get result...");
 				rdmaResult = simpleClient.result;
 				if (rdmaResult == null) {
+					System.out.println("Proxy: Prepare 504 HTTP Response....");
 					simpleClient.close();
 					t.sendResponseHeaders(504, 0);
 					OutputStream os = t.getResponseBody();
@@ -138,7 +141,7 @@ public class Proxy {
 				System.out.println("rdmaResult should be the png.....");
 
 				System.out.println("Proxy: Prepare response for client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
-
+				//nothing to do here..... ;-)
 				System.out.println("Return response to client.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 
 				Headers headers = t.getResponseHeaders();

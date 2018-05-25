@@ -65,7 +65,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 		System.out.println("connect to the server...");
 		endpoint.connect(URI.create("rdma://" + ipAddress + ":" + port));
-		
+
 		//die init methode wird wärend des obigen calls irgendwann auch aufgerufen...
 		InetSocketAddress _addr = (InetSocketAddress) endpoint.getDstAddr();
 		System.out.println("RdmaProxyEndpoint::client connected, address " + _addr.toString());
@@ -80,7 +80,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		int lkey = 0;
 		SVCPostSend postSend = null;
 
-		
+
 
 		if (getHTML) {
 			////////html////////////////////////////////////////////////////////////
@@ -92,15 +92,15 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			workCompEv = endpoint.getWcEvents().take();
 			//IBV_WC_SEND(0) wird "empfangen"
-			System.out.println("1....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			System.out.println("1....request opcode="+ workCompEv.getOpcode());
 
 
 			workCompEv = endpoint.getWcEvents().take();
 			// IBV_WC_RECV(128)
-			System.out.println("2....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			System.out.println("2....request opcode="+ workCompEv.getOpcode() );
 
 			recvBuf = endpoint.getRecvBuf();
-			
+
 			//the message has been received in this buffer
 			//it contains some RDMA information sent by the server index.html metadata
 			recvBuf.clear();
@@ -137,15 +137,15 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			postSend.getWrMod(0).getSgeMod(0).setLength(length);
 			postSend.execute();
-			
+
 			//wait until the operation has completed
 			workCompEv = endpoint.getWcEvents().take();
 			//IBV_WC_RDMA_READ(2)
-			System.out.println("3....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			System.out.println("3....request opcode="+ workCompEv.getOpcode());
 
 			//we should have the content of the remote buffer in our own local buffer now
 			ByteBuffer dataBuf = endpoint.getDataBuf();//mefi84 endpoint.getDataBuf();
-			
+
 			//store result
 			result = new byte[length];
 			try {
@@ -156,7 +156,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			}
 
 			String tr = new String(result);
-			System.out.println("$$$RdmaProxyEndpoint$$$ rdmaResult as string="+tr);
+			System.out.println("RdmaProxyEndpoint::rdmaResult as string="+tr);
 		}
 
 		else {
@@ -173,12 +173,12 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			workCompEv = endpoint.getWcEvents().take();
 			//IBV_WC_SEND(0) wird "empfangen"
-			System.out.println("PNG 1....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			System.out.println("PNG 1....request opcode="+ workCompEv.getOpcode());
 
 
 			workCompEv = endpoint.getWcEvents().take();
 			// IBV_WC_RECV(128)
-			System.out.println("PNG 2....request was=opcode="+ workCompEv.getOpcode() +"  "+endpoint.recvBuf.asCharBuffer().toString());
+			System.out.println("PNG 2....request opcode="+ workCompEv.getOpcode());
 
 			recvBuf = endpoint.getRecvBuf();
 			//the message has been received in this buffer
@@ -228,16 +228,16 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 
 			LinkedList<IbvSendWR> temp = new LinkedList<>();
 			temp.add(rdmaReadWR);
-			
+
 			postSend = endpoint.postSend(temp);
 
 			postSend.getWrMod(0).getSgeMod(0).setLength(length);
 			postSend.execute();
-			
+
 			//wait until the operation has completed
 			workCompEv = endpoint.getWcEvents().take();
 			//IBV_WC_RDMA_READ(2)
-			System.out.println("PNG 3....request was=opcode="+ workCompEv.getOpcode()+" png should now be in buffer");
+			System.out.println("PNG 3....request opcode="+ workCompEv.getOpcode()+".... png should now be in buffer");
 
 			//we should have the content of the remote buffer in our own local buffer now
 			if (bigBuf)
@@ -245,21 +245,17 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 			else
 				dataBuf = endpoint.getDataBuf();
 			dataBuf.clear();
-			
+
 			byte[] pngPicture = new byte[length];
-			System.out.println("dataBuf.array().length hasArray="+dataBuf.hasArray());
 			for (int i=0; i<length;i++) {
 				pngPicture[i] = dataBuf.get(i);
 			}
 			System.out.println("pngPicture.length="+pngPicture.length);
-
-			System.out.println("write png to "+ pathStaticPages+ "network.png");
-
 			//store result
 			result = pngPicture.clone();
 		}
 
-		
+
 		//prepare final message
 		sendWR = endpoint.getSendWR();
 		sgeSend = new IbvSge();
@@ -282,7 +278,7 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		//post that operation
 		endpoint.postSend(endpoint.getWrList_send()).execute().free();
 
-		
+
 		//close everything and free buffers
 		close();
 	}
@@ -434,21 +430,27 @@ public class RdmaProxyEndpoint implements RdmaEndpointFactory<RdmaProxyEndpoint.
 		}
 	}
 
-	public void close() throws IOException, InterruptedException {
-		
+	public void close(){
+
 		//close everything
 		System.out.println("closing endpoint");
 		//delete buffers
-		endpoint.deregisterMemory(endpoint.dataMr);
-		if (bigBuf) {
-			endpoint.deregisterMemory(endpoint.dataBigMr);
-		}
-		endpoint.deregisterMemory(endpoint.sendMr);
-		endpoint.deregisterMemory(endpoint.recvMr);
+		try {
+			endpoint.deregisterMemory(endpoint.dataMr);
+			if (bigBuf) {
+				endpoint.deregisterMemory(endpoint.dataBigMr);
+			}
+			endpoint.deregisterMemory(endpoint.sendMr);
+			endpoint.deregisterMemory(endpoint.recvMr);
 
-		endpoint.close();
-		System.out.println("closing endpoint, done");
-		endpointGroup.close();
+			endpoint.close();
+			System.out.println("closing endpoint, done");
+			endpointGroup.close();
+		}
+		catch (Exception e) {
+			System.out.println("RdmaProxyEndpoint::close() "+e.getMessage());
+
+		}
 	}
 
 }
