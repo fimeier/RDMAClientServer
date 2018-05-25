@@ -96,6 +96,7 @@ How the server works
 * RDMA_Server_Start.class calls RdmaHTTPServerEndpoint.class
 * RdmaHTTPServerEndpoint.class is based on the ReadServer example
 * the run() method serves one client after another (compare listing)
+* Hint: A client requests one of the files and then closes the connection (compare RdmaProxyEndpoint::run() if..else
 
 ```java
 public void run() throws Exception {
