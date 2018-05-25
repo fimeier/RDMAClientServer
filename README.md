@@ -17,14 +17,14 @@ How to start the RDMAServer
 
 How the proxy works
 ================================
-1. Proxy_start.class calls a simple Proxy.class based on com.sun.net.httpserver
-1. Proxy.class checks the validity of the client request, basically
+* Proxy_start.class calls a simple Proxy.class based on com.sun.net.httpserver
+* Proxy.class checks the validity of the client request, basically...
 
 ```java
 if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET"))
 ```
 
-1. then... Proxy.class checks the validity of the client request, basically
+* ...and returns HTTP 404 (for "wrong" requests) or HTTP 200 and the content by calling RdmaProxyEndpoint.class to fetch the content from the server
 
 
 
