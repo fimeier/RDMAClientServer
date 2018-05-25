@@ -24,7 +24,23 @@ How the proxy works
 if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.com/network.png")) || !reqMethod.equals("GET"))
 ```
 
-* ...and returns HTTP 404 (for "wrong" requests) or HTTP 200 and the content by calling RdmaProxyEndpoint.class to fetch the content from the server
+* ...and returns HTTP 404 (for "wrong" requests) or HTTP 200 and the content by calling RdmaProxyEndpoint.class
+  * if the server doesn't respond, a HTTP 504 will be sent to the client; compare:
+
+```java
+if (rdmaResult == null) {
+System.out.println("Proxy: Prepare 504 HTTP Response....");
+simpleClient.close();
+t.sendResponseHeaders(504, 0);
+OutputStream os = t.getResponseBody();
+// os.write(resp);
+os.close();
+System.out.println("Proxy: Send 504 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
+return;
+}
+```
+
+* RdmaProxyEndpoint.class is based
 
 
 
