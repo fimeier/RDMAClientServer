@@ -17,7 +17,7 @@ public class Proxy_start {
 		int proxyPort = 8000;
 		String rdmaServerIP = "10.80.51.30";
 		String proxysite = "www.rdmawebpage.com";
-
+		
 		if (args.length==2) {
 			proxyPort=Integer.parseInt(args[0]);
 			rdmaServerIP=args[1];
