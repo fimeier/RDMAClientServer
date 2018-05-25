@@ -28,6 +28,15 @@ if (!(reqURI.equals("www.rdmawebpage.com/") || reqURI.equals("www.rdmawebpage.co
   * if the server doesn't respond, a HTTP 504 will be sent to the client; compare:
 
 ```java
+/*
+ * Just for Server-Timeouts
+*/
+SimpleClientCall sc = new SimpleClientCall(simpleClient, args2);
+Thread tt = (new Thread(sc));
+tt.start();
+System.out.println("join("+wTime+")... waiting...");
+tt.join(wTime);
+rdmaResult = simpleClient.result;
 if (rdmaResult == null) {
   System.out.println("Proxy: Prepare 504 HTTP Response....");
   simpleClient.close();
