@@ -114,7 +114,6 @@ public class Proxy {
 					os.close();
 					System.out.println("Proxy: Send 504 HTTP Response.... reqMethod / reqURI = " + reqMethod + " / " + reqURI);
 					return;
-
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block

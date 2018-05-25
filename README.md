@@ -49,7 +49,45 @@ if (rdmaResult == null) {
 }
 ```
 
-* RdmaProxyEndpoint.class is based
+* RdmaProxyEndpoint.class is based on the ReadClient example
+  * I added some bigger buffers and some helper methods
+  * the run() method
+```java
+public void run() throws Exception {
+  //..
+  if (getHTML) {
+    ////////html////////////////////////////////////////////////////////////
+    System.out.println("ask server for html...");
+
+    //get buffer metadata to fetch index.html and then get the file
+    //...
+
+    //store result
+    result = new byte[length];
+    //...
+  }
+  else {
+    ////////png/
+    System.out.println("ask server for png...");
+
+    //get buffer metadata to fetch network.png and then get the file
+    //...
+
+    //store result
+    result = pngPicture.clone();
+  }
+  //prepare final message
+  //signal server to close connection
+
+  //close everything
+  close();
+
+  /*
+   * return to caller; the Proxy
+   * result contains the data
+  */
+}
+
 
 
 
