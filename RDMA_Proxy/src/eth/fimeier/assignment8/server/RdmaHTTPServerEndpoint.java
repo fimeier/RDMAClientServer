@@ -6,7 +6,6 @@ import com.ibm.disni.rdma.RdmaActiveEndpointGroup;
 import com.ibm.disni.rdma.RdmaEndpointFactory;
 import com.ibm.disni.rdma.RdmaServerEndpoint;
 import com.ibm.disni.rdma.verbs.*;
-import com.ibm.disni.rdma.verbs.SVCPostSend.SendWRMod;
 
 import org.apache.commons.cli.ParseException;
 

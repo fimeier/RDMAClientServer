@@ -91,8 +91,34 @@ public void run() throws Exception {
 }
 ```
 
+How the server works
+================================
+* RDMA_Server_Start.class calls RdmaHTTPServerEndpoint.class
+* RdmaHTTPServerEndpoint.class is based on the ReadServer example
+* the run() method serves one client after another (compare listing)
 
+```java
+public void run() throws Exception {
+  //init...
 
+  while(runForeEver) {
+    //accepting a new client
+    System.out.println("RdmaHTTPServerEndpoint::Waiting for new client connection");
+    RdmaHTTPServerEndpoint.CustomServerEndpoint endpoint = serverEndpoint.accept(); 
 
+    //the accept() call prepares some buffers for the client and also loads the files from disk into them
+
+    //the client asks for some metadata with a request RDMA send/recv
+    switch(request) {
+
+    case "getIndex.html":
+      //return metadata for index.html
+
+    case "getnetwork.png":
+      //return metadata for index.html
+
+    case "final message close connection":
+      //close everything and jump back to while(runForeEver)
+}
 
 
